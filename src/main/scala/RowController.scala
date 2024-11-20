@@ -9,14 +9,14 @@ class RowController extends Module {
     val writeEnable = Input(Bool())
     val writeData = Input(UInt(1.W))
 
-    val prevRow = Output(Vec(20, UInt(1.W)))
-    val row = Output(Vec(20, UInt(1.W)))
-    val nextRow = Output(Vec(20, UInt(1.W)))
+    val prevRow = Output(Vec(20, UInt(3.W)))
+    val row = Output(Vec(20, UInt(3.W)))
+    val nextRow = Output(Vec(20, UInt(3.W)))
   })
 
-  val rowA = RegInit(VecInit(Seq.fill(20)(0.U(1.W)))) // Use 2.W when we add a cache bit
-  val rowB = RegInit(VecInit(Seq.fill(20)(0.U(1.W))))
-  val rowC = RegInit(VecInit(Seq.fill(20)(0.U(1.W))))
+  val rowA = RegInit(VecInit(Seq.fill(20)(0.U(3.W)))) // Use 2.W when we add a cache bit
+  val rowB = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
+  val rowC = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
 
   when(io.nextRowIndex === 0.U) {
     io.prevRow := rowB
