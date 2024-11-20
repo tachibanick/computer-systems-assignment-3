@@ -109,10 +109,8 @@ class Accelerator extends Module {
     is (left) {
       writeEnable := false.B
       val value = io.dataRead(getAddress(x-1.U,y))(0)
-      value := value + 2.U
-      row(x-1.U) := value
+      row(x-1.U) := value + 2.U
       when (row(x-1.U)(0)){ // left is white
-
         when(prevRow(x)(1)) { //upstairs neighbor is read
           when (prevRow(x)(0)) { //upstairs neighbor is white
             when (row(x+1.U)(1)) { // right neighbor is read
@@ -145,8 +143,7 @@ class Accelerator extends Module {
     is (top) {
       writeEnable := false.B
       val value = io.dataRead(getAddress(x,y-1.U))(0)
-      value := value + 2.U
-      prevRow(x) := value
+      prevRow(x) := value + 2.U
       when (prevRow(x)(0)) { //upstiars white
 
         when (row(x+1.U)(1)) { // right neighbor is read
@@ -175,8 +172,7 @@ class Accelerator extends Module {
     is (right) {
       writeEnable := false.B
       val value = io.dataRead(getAddress(x+1.U,y))(0)
-      value := value + 2.U
-      row(x+1.U) := value
+      row(x+1.U) := value + 2.U
       when (row(x+1.U)(0)){
 
         when (nextRow(x)(1)) { //downstairs neighbor is read
@@ -195,8 +191,7 @@ class Accelerator extends Module {
     is (down) {
       writeEnable := false.B
       val value = io.dataRead(getAddress(x,y-1.U))(0)
-      value := value + 2.U
-      nextRow(x) := value
+      nextRow(x) := value + 2.U
       when (nextRow(x)(0)) {
         stateReg := write_white
       }.otherwise{
