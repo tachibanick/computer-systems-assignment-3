@@ -93,7 +93,8 @@ class Accelerator extends Module {
       io.address := getAddress(x,y)
 
       val value = io.dataRead(0) // clock cycle
-      row(x) := value + 2.U
+      updateRow(1.U, x, value + 2.U)
+      //row(x) := value + 2.U
 
       when (value) { // white
         when (row(x-1.U)(1)) { // left neighbor is read
@@ -131,15 +132,19 @@ class Accelerator extends Module {
         }
 
       } .otherwise{ // value is black
-        row(x+1.U) := 4.U + row(x+1.U)
-        nextRow(x) := 4.U + nextRow(x)
+        updateRow(1.U, x+1.U, Mux(row(x+1.U)(2), row(x+1.U), row(x+1.U) + 4.U))
+        //row(x+1.U) := 4.U + row(x+1.U)
+        //todo
+        updateRow(2.U, x, 4.U + nextRow(x))
+        //nextRow(x) := 4.U + nextRow(x)
 
         stateReg := write_black
       }
     }
     is (left) {
       val value = io.dataRead(getAddress(x-1.U,y))(0)
-      row(x-1.U) := value + 2.U
+      updateRow(1.U, x-1.U, value+2.U)
+      //row(x-1.U) := value + 2.U
       when (row(x-1.U)(0)){ // left is white
         when(prevRow(x)(1)) { //upstairs neighbor is read
           when (prevRow(x)(0)) { //upstairs neighbor is white
@@ -172,8 +177,9 @@ class Accelerator extends Module {
     }
     is (top) {
       val value = io.dataRead(getAddress(x,y-1.U))(0)
-      prevRow(x) := value + 2.U
-      when (prevRow(x)(0)) { //upstiars white
+      updateRow(0.U, x, value+2.U)
+      //prevRow(x) := value + 2.U
+      when (value) { //upstiars white
 
         when (row(x+1.U)(1)) { // right neighbor is read
           when (row(x+1.U)(0)) { //right neighbor white
@@ -200,7 +206,8 @@ class Accelerator extends Module {
 
     is (right) {
       val value = io.dataRead(getAddress(x+1.U,y))(0)
-      row(x+1.U) := value + 2.U
+      updateRow(1.U, x+1.U, Mux(row(x+1.U)(2), value+6.U, value+2.U))
+      //row(x+1.U) := value + 2.U
       when (row(x+1.U)(0)){
 
         when (nextRow(x)(1)) { //downstairs neighbor is read
@@ -218,7 +225,8 @@ class Accelerator extends Module {
     }
     is (down) {
       val value = io.dataRead(getAddress(x,y-1.U))(0)
-      nextRow(x) := value + 2.U
+      updateRow(2.U, x, value+2.U)
+      //nextRow(x) := value + 2.U
       when (nextRow(x)(0)) {
         stateReg := write_white
       }.otherwise{
@@ -286,8 +294,11 @@ class Accelerator extends Module {
               stateReg := left
             }
           }.otherwise{
-            row(x+1.U) := row(x+1.U) + 4.U
-            nextRow(x) := nextRow(x) + 4.U
+            updateRow(1.U, x+1.U, row(x+1.U)+4.U)
+            //row(x+1.U) := row(x+1.U) + 4.U
+            // TODO this works?
+            updateRow(2.U, x, nextRow(x) + 4.U)
+            //nextRow(x) := nextRow(x) + 4.U
             stateReg := write_black
           }
 
@@ -356,8 +367,11 @@ class Accelerator extends Module {
               stateReg := left
             }
           }.otherwise{
-            row(x+1.U) := row(x+1.U) + 4.U
-            nextRow(x) := nextRow(x) + 4.U
+            updateRow(1.U, x+1.U, row(x+1.U) + 4.U)
+            //row(x+1.U) := row(x+1.U) + 4.U
+            // todo
+            updateRow(2.U, x, nextRow(x) + 4.U)
+            //nextRow(x) := nextRow(x) + 4.U
             stateReg := write_black
           }
 
