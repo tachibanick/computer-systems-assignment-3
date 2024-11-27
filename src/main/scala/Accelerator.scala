@@ -17,44 +17,18 @@ class Accelerator extends Module {
   val prevRow = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
   val row = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
   val nextRow = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
-  //  val prevRow = Wire(Vec(20, UInt(3.W)))
-  //  val row = Wire(Vec(20, UInt(3.W)))
-  //  val nextRow = Wire(Vec(20, UInt(3.W)))
-  //  val nextRowIndex = RegInit(2.U(2.W))
-
-  //  // TODO: Maybe use wires instead of registers for these
-  //  when(nextRowIndex === 0.U) {
-  //    prevRow := rowB
-  //    row := rowC
-  //    nextRow := rowA
-  //  }.elsewhen(nextRowIndex === 1.U) {
-  //    prevRow := rowC
-  //    row := rowA
-  //    nextRow := rowB
-  //  }.otherwise {
-  //    prevRow := rowA
-  //    row := rowB
-  //    nextRow := rowC
-  //  }
-
 
   //States
   val x = RegInit(0.U(5.W))
   val y = RegInit(0.U(5.W))
 
-  // TODO: Increment after last row
   val incrementY = () => {
     y := y + 1.U
     x := 0.U
-    //    when(nextRowIndex === 2.U) {
-    //      nextRowIndex := 0.U
-    //    }.otherwise {
-    //      nextRowIndex := nextRowIndex + 1.U
-    //    }
   }
 
   val incrementX = () => {
-    when (x < 19.U) {
+    when(x < 19.U) {
       x := x + 1.U
     }.otherwise {
       incrementY()
@@ -102,11 +76,11 @@ class Accelerator extends Module {
     val value = io.dataRead === 255.U
 
     when(pixelY === y - 1.U) {
-      prevRow(pixelX) := value + 2.U + prevRow(pixelX)(2)
-    } .elsewhen(pixelY === y) {
-      row(pixelX) := value + 2.U + row(pixelX)(2)
-    } .elsewhen(pixelY === y + 1.U) {
-      nextRow(pixelX) := value + 2.U + nextRow(pixelX)(2)
+      prevRow(pixelX) := value + 2.U + (prevRow(pixelX) & 4.U)
+    }.elsewhen(pixelY === y) {
+      row(pixelX) := value + 2.U + (row(pixelX) & 4.U)
+    }.elsewhen(pixelY === y + 1.U) {
+      nextRow(pixelX) := value + 2.U + (nextRow(pixelX) & 4.U)
     }
   }
 
@@ -115,11 +89,11 @@ class Accelerator extends Module {
     io.address := getReadAddress(pixelX, pixelY)
 
     when(pixelY === y - 1.U) {
-      prevRow(pixelX) := prevRow(pixelX)(1,0) + 4.U
-    } .elsewhen(pixelY === y) {
-      row(pixelX) := row(pixelX)(1,0) + 4.U
-    } .elsewhen(pixelY === y + 1.U) {
-      nextRow(pixelX) := nextRow(pixelX)(1,0) + 4.U
+      prevRow(pixelX) := prevRow(pixelX)(1, 0) + 4.U
+    }.elsewhen(pixelY === y) {
+      row(pixelX) := row(pixelX)(1, 0) + 4.U
+    }.elsewhen(pixelY === y + 1.U) {
+      nextRow(pixelX) := nextRow(pixelX)(1, 0) + 4.U
     }
   }
 
@@ -133,8 +107,6 @@ class Accelerator extends Module {
   val writeWhite = (x: UInt, y: UInt) => writePixel(x, y, 255.U)
 
   //Default values
-  //  val writeEnable = RegInit(false.B)
-  //  io.writeEnable := writeEnable
   io.writeEnable := false.B
   io.address := 0.U
   io.dataWrite := 0.U
@@ -148,7 +120,6 @@ class Accelerator extends Module {
 
   //FSMD
   when(start) {
-    // TODO: Split up somehow to increment and clear separately
     when(y === 20.U) {
       io.done := true.B
     }.otherwise {
@@ -221,290 +192,4 @@ class Accelerator extends Module {
       }
     }
   }
-
-  //    io.address := getReadAddress(x, y)
-  //
-  //    val value = io.dataRead(0) // clock cycle
-  //    val pixel = row(x)
-  //    pixel := value + 2.U
-  //
-  //
-  //    when(value) { // white
-  //      when(row(x - 1.U)(1)) { // left neighbor is read
-  //        when(row(x - 1.U)(0)) { // left neighbor white)
-  //          when(prevRow(x)(1)) { //upstairs neighbor is read
-  //            when(prevRow(x)(0)) { //upstairs neighbor is white
-  //              when(row(x + 1.U)(1)) { // right neighbor is read
-  //                when(row(x + 1.U)(0)) { //right neighbor white
-  //                  when(nextRow(x)(1)) { //downstairs neighbor is read
-  //                    when(nextRow(x)(0)) { // downstairs neighbor white
-  //                      // stateReg := write_white
-  //                    }.otherwise { //downstairs is black
-  //                      // stateReg := write_black
-  //                    }
-  //                  }.otherwise { //downstairs unread
-  //                    // stateReg := down
-  //                  }
-  //                }.otherwise { //right neighbor black
-  //                  // stateReg := write_black
-  //                }
-  //              }.otherwise { //right neighbour unread
-  //                // stateReg := right
-  //              }
-  //            }.otherwise { //upstairs black
-  //              // stateReg := write_black
-  //            }
-  //          }.otherwise { //upstairs neighbor unread
-  //            // stateReg := top
-  //          }
-  //        }.otherwise { // left neighbor black
-  //          // stateReg := write_black
-  //        }
-  //      }.otherwise { //left neighbor unread
-  //        // stateReg := left
-  //      }
-  //
-  //    }.otherwise { // value is black
-  //      row(x + 1.U) := 4.U + row(x + 1.U)
-  //      nextRow(x) := 4.U + nextRow(x)
-  //
-  //      // stateReg := write_black
-  //    }
-  //}
-  //    is (left) {
-  //      writeEnable := false.B
-  //      val value = io.dataRead(getAddress(x-1.U,y))(0)
-  //      row(x-1.U) := value + 2.U
-  //      when (row(x-1.U)(0)){ // left is white
-  //        when(prevRow(x)(1)) { //upstairs neighbor is read
-  //          when (prevRow(x)(0)) { //upstairs neighbor is white
-  //            when (row(x+1.U)(1)) { // right neighbor is read
-  //              when (row(x+1.U)(0)) { //right neighbor white
-  //                when (nextRow(x)(1)) { //downstairs neighbor is read
-  //                  when (nextRow(x)(0)) { // downstairs neighbor white
-  //                    stateReg := write_white
-  //                  } . otherwise { //downstairs is black
-  //                    stateReg := write_black
-  //                  }
-  //                } . otherwise { //downstairs unread
-  //                  stateReg := down
-  //                }
-  //              } .otherwise{ //right neighbor black
-  //                stateReg := write_black
-  //              }
-  //            } .otherwise { //right neighbour unread
-  //              stateReg := right
-  //            }
-  //          } . otherwise { //upstairs black
-  //            stateReg := write_black
-  //          }
-  //        } . otherwise { //upstairs neighbor unread
-  //          stateReg := top
-  //        }
-  //      } . otherwise {
-  //        stateReg := write_black
-  //      }
-  //    }
-  //    is (top) {
-  //      writeEnable := false.B
-  //      val value = io.dataRead(getAddress(x,y-1.U))(0)
-  //      prevRow(x) := value + 2.U
-  //      when (prevRow(x)(0)) { //upstiars white
-  //
-  //        when (row(x+1.U)(1)) { // right neighbor is read
-  //          when (row(x+1.U)(0)) { //right neighbor white
-  //            when (nextRow(x)(1)) { //downstairs neighbor is read
-  //              when (nextRow(x)(0)) { // downstairs neighbor white
-  //                stateReg := write_white
-  //              } . otherwise { //downstairs is black
-  //                stateReg := write_black
-  //              }
-  //            } . otherwise { //downstairs unread
-  //              stateReg := down
-  //            }
-  //          } .otherwise{ //right neighbor black
-  //            stateReg := write_black
-  //          }
-  //        } .otherwise { //right neighbour unread
-  //          stateReg := right
-  //        }
-  //
-  //      } .otherwise{ //upstairs blacker
-  //        stateReg := write_black
-  //      }
-  //    }
-  //
-  //    is (right) {
-  //      writeEnable := false.B
-  //      val value = io.dataRead(getAddress(x+1.U,y))(0)
-  //      row(x+1.U) := value + 2.U
-  //      when (row(x+1.U)(0)){
-  //
-  //        when (nextRow(x)(1)) { //downstairs neighbor is read
-  //          when (nextRow(x)(0)) { // downstairs neighbor white
-  //            stateReg := write_white
-  //          } . otherwise { //downstairs is black
-  //            stateReg := write_black
-  //          }
-  //        } . otherwise { //downstairs unread
-  //          stateReg := down
-  //        }
-  //      }.otherwise{ //right is black
-  //        stateReg := write_black
-  //      }
-  //    }
-  //    is (down) {
-  //      writeEnable := false.B
-  //      val value = io.dataRead(getAddress(x,y-1.U))(0)
-  //      nextRow(x) := value + 2.U
-  //      when (nextRow(x)(0)) {
-  //        stateReg := write_white
-  //      }.otherwise{
-  //        stateReg := write_black
-  //      }
-  //    }
-  //
-  //    is (write_white){
-  //      io.dataWrite := 255.U
-  //      io.address := getAddress(x,y)
-  //      writeEnable := true.B
-  //      x := x+1.U
-  //      when (x>19.U){
-  //        y := y+1.U
-  //        x := 0.U
-  //        //rotate rows
-  //        when (nextRowIndex === 2.U){
-  //          nextRowIndex := 0.U
-  //        } .otherwise{
-  //          nextRowIndex := nextRowIndex + 1.U
-  //        }
-  //        when (y > 19.U){
-  //          //TODO clear everything?
-  //          io.done := true.B
-  //        }
-  //      }
-  //      when (x === 0.U || x === 19.U || y === 0.U || y === 19.U){
-  //        stateReg := write_black
-  //      }.otherwise{
-  //        when(row(x)(2)){ //if eroded
-  //          stateReg := write_black
-  //        }.elsewhen(row(x)(1)){
-  //          when (row(x)(0)) { //is white
-  //            when (row(x-1.U)(1)) { // left neighbor is read
-  //              when (row(x-1.U)(0)) { // left neighbor white)
-  //                when(prevRow(x)(1)) { //upstairs neighbor is read
-  //                  when (prevRow(x)(0)) { //upstairs neighbor is white
-  //                    when (row(x+1.U)(1)) { // right neighbor is read
-  //                      when (row(x+1.U)(0)) { //right neighbor white
-  //                        when (nextRow(x)(1)) { //downstairs neighbor is read
-  //                          when (nextRow(x)(0)) { // downstairs neighbor white
-  //                            stateReg := write_white
-  //                          } . otherwise { //downstairs is black
-  //                            stateReg := write_black
-  //                          }
-  //                        } . otherwise { //downstairs unread
-  //                          stateReg := down
-  //                        }
-  //                      } .otherwise{ //right neighbor black
-  //                        stateReg := write_black
-  //                      }
-  //                    } .otherwise { //right neighbour unread
-  //                      stateReg := right
-  //                    }
-  //                  } . otherwise { //upstairs black
-  //                    stateReg := write_black
-  //                  }
-  //                } . otherwise { //upstairs neighbor unread
-  //                  stateReg := top
-  //                }
-  //              } . otherwise { // left neighbor black
-  //                stateReg := write_black
-  //              }
-  //            } . otherwise { //left neighbor unread
-  //              stateReg := left
-  //            }
-  //          }.otherwise{
-  //            row(x+1.U) := row(x+1.U) + 4.U
-  //            nextRow(x) := nextRow(x) + 4.U
-  //            stateReg := write_black
-  //          }
-  //
-  //        }.otherwise{
-  //          stateReg := center
-  //        }
-  //      }
-  //
-  //    }
-  //    is (write_black) {
-  //      io.dataWrite := 0.U
-  //      io.address := getAddress(x,y)
-  //      writeEnable := true.B
-  //      x := x+1.U
-  //      when (x>19.U){
-  //        y := y+1.U
-  //        x := 0.U
-  //        when (nextRowIndex === 2.U){
-  //          nextRowIndex := 0.U
-  //        } .otherwise{
-  //          nextRowIndex := nextRowIndex + 1.U
-  //        }
-  //        when (y > 19.U){
-  //          //TODO clear bottom row
-  //          io.done := true.B
-  //        }
-  //      }
-  //      when (x === 0.U || x === 19.U || y === 0.U || y === 19.U){
-  //        stateReg := write_black
-  //      }.otherwise{
-  //        when(row(x)(2)){ //if eroded
-  //          stateReg := write_black
-  //        }.elsewhen(row(x)(1)){
-  //          when (row(x)(0)) { //is white
-  //            when (row(x-1.U)(1)) { // left neighbor is read
-  //              when (row(x-1.U)(0)) { // left neighbor white)
-  //                when(prevRow(x)(1)) { //upstairs neighbor is read
-  //                  when (prevRow(x)(0)) { //upstairs neighbor is white
-  //                    when (row(x+1.U)(1)) { // right neighbor is read
-  //                      when (row(x+1.U)(0)) { //right neighbor white
-  //                        when (nextRow(x)(1)) { //downstairs neighbor is read
-  //                          when (nextRow(x)(0)) { // downstairs neighbor white
-  //                            stateReg := write_white
-  //                          } . otherwise { //downstairs is black
-  //                            stateReg := write_black
-  //                          }
-  //                        } . otherwise { //downstairs unread
-  //                          stateReg := down
-  //                        }
-  //                      } .otherwise{ //right neighbor black
-  //                        stateReg := write_black
-  //                      }
-  //                    } .otherwise { //right neighbour unread
-  //                      stateReg := right
-  //                    }
-  //                  } . otherwise { //upstairs black
-  //                    stateReg := write_black
-  //                  }
-  //                } . otherwise { //upstairs neighbor unread
-  //                  stateReg := top
-  //                }
-  //              } . otherwise { // left neighbor black
-  //                stateReg := write_black
-  //              }
-  //            } . otherwise { //left neighbor unread
-  //              stateReg := left
-  //            }
-  //          }.otherwise{
-  //            row(x+1.U) := row(x+1.U) + 4.U
-  //            nextRow(x) := nextRow(x) + 4.U
-  //            stateReg := write_black
-  //          }
-  //
-  //        }.otherwise{
-  //          stateReg := center
-  //        }
-  //      }
-  //
-  //    }
-  //  }
-
 }
