@@ -106,11 +106,14 @@ class Accelerator extends Module {
     when(y === 20.U) {
       io.done := true.B
     }.otherwise {
-      when(x === 0.U && RegNext(x) =/= 0.U) {
-        prevRow := row
-        row := nextRow
-        clearNextRow()
-      }.elsewhen(x === 0.U || x === 19.U || y === 0.U || y === 19.U) {
+      when(x === 0.U || x === 19.U || y === 0.U || y === 19.U) {
+        when(x === 0.U) {
+          // Shift rows
+          prevRow := row
+          row := nextRow
+          clearNextRow()
+        }
+
         writeBlack(x, y)
         incrementX()
       }.otherwise {
