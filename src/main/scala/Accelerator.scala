@@ -37,26 +37,9 @@ class Accelerator extends Module {
 
   // Run in first cell of a new row
   val clearNextRow = () => {
-    nextRow(0) := 0.U
-    nextRow(1) := 0.U
-    nextRow(2) := 0.U
-    nextRow(3) := 0.U
-    nextRow(4) := 0.U
-    nextRow(5) := 0.U
-    nextRow(6) := 0.U
-    nextRow(7) := 0.U
-    nextRow(8) := 0.U
-    nextRow(9) := 0.U
-    nextRow(10) := 0.U
-    nextRow(11) := 0.U
-    nextRow(12) := 0.U
-    nextRow(13) := 0.U
-    nextRow(14) := 0.U
-    nextRow(15) := 0.U
-    nextRow(16) := 0.U
-    nextRow(17) := 0.U
-    nextRow(18) := 0.U
-    nextRow(19) := 0.U
+    for (i <- 0 until 20) {
+      nextRow(i) := 0.U
+    }
   }
 
   val getReadAddress = (x: UInt, y: UInt) => 20.U * y + x
