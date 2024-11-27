@@ -17,24 +17,14 @@ class Accelerator extends Module {
   val rowA = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
   val rowB = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
   val rowC = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
-  val prevRow = RegInit(VecInit(Seq.fill(20)(0.U(3.W)))) 
-  val row = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
-  val nextRow = RegInit(VecInit(Seq.fill(20)(0.U(3.W))))
+  //val prevRow = Wire(Vec(20, UInt(3.W)))
+  //val row = Wire(Vec(20, UInt(3.W)))
+  //val nextRow = Wire(Vec(20, UInt(3.W)))
   val nextRowIndex = RegInit(2.U(2.W))
 
-  when(nextRowIndex === 0.U) {
-    prevRow := rowB
-    row := rowC
-    nextRow := rowA
-  } .elsewhen(nextRowIndex === 1.U) {
-    prevRow := rowC
-    row := rowA
-    nextRow := rowB
-  } .otherwise {
-    prevRow := rowA
-    row := rowB
-    nextRow := rowC
-  }
+  val prevRow = Mux(nextRowIndex === 0.U, rowB, Mux(nextRowIndex === 1.U, rowC, rowA))
+  val row = Mux(nextRowIndex === 0.U, rowC, Mux(nextRowIndex === 1.U, rowA, rowB))
+  val nextRow = Mux(nextRowIndex === 0.U, rowA, Mux(nextRowIndex === 1.U, rowB, rowC))
 
   //States
   val init :: write_white :: write_black :: center :: left :: top :: right ::  down :: Nil = Enum (8)
@@ -42,13 +32,56 @@ class Accelerator extends Module {
   val x = RegInit(0.U(5.W))
   val y = RegInit(0.U(5.W))
 
-  val getAddress = (x: UInt, y: UInt) => Mux(writeEnable, 400.U+y*20.U+x, 20.U*y+x)
+  val getAddress = (x: UInt, y: UInt) => Mux(io.writeEnable, 400.U+y*20.U+x, 20.U*y+x)
 
+  def updateRow(rowNumber: UInt, x: UInt, value: UInt) = {
+    switch (nextRowIndex) {
+      is (0.U){
+        switch (rowNumber) {
+          is (0.U) {
+            rowB(x) := value
+          }
+          is (1.U) {
+            rowC(x) := value
+          }
+          is (2.U) {
+            rowA(x) := value
+          }
+        }
+      }
+      is (1.U) {
+        switch (rowNumber) {
+          is (0.U) {
+            rowC(x) := value
+          }
+          is (1.U) {
+            rowA(x) := value
+          }
+          is (2.U) {
+            rowB(x) := value
+          }
+        }
+      }
+      is (2.U) {
+        switch (rowNumber) {
+          is (0.U) {
+            rowA(x) := value
+          }
+          is (1.U) {
+            rowB(x) := value
+          }
+          is (2.U) {
+            rowC(x) := value
+          }
+        }
+      }
+    }
+  }
   
 
   //Default values
-  val writeEnable = RegInit(false.B)
-  io.writeEnable := writeEnable
+
+  io.writeEnable := false.B
   io.address := 0.U
   io.dataWrite := 0.U(32.W)
   io.done := false.B
@@ -57,12 +90,10 @@ class Accelerator extends Module {
   //FSMD
   switch(stateReg) {
     is(center) {
-      writeEnable := false.B
       io.address := getAddress(x,y)
 
       val value = io.dataRead(0) // clock cycle
-      val pixel = row(x)
-      pixel := value + 2.U
+      row(x) := value + 2.U
 
       when (value) { // white
         when (row(x-1.U)(1)) { // left neighbor is read
@@ -107,7 +138,6 @@ class Accelerator extends Module {
       }
     }
     is (left) {
-      writeEnable := false.B
       val value = io.dataRead(getAddress(x-1.U,y))(0)
       row(x-1.U) := value + 2.U
       when (row(x-1.U)(0)){ // left is white
@@ -141,7 +171,6 @@ class Accelerator extends Module {
       }
     }
     is (top) {
-      writeEnable := false.B
       val value = io.dataRead(getAddress(x,y-1.U))(0)
       prevRow(x) := value + 2.U
       when (prevRow(x)(0)) { //upstiars white
@@ -170,7 +199,6 @@ class Accelerator extends Module {
     }
 
     is (right) {
-      writeEnable := false.B
       val value = io.dataRead(getAddress(x+1.U,y))(0)
       row(x+1.U) := value + 2.U
       when (row(x+1.U)(0)){
@@ -189,7 +217,6 @@ class Accelerator extends Module {
       }
     }
     is (down) {
-      writeEnable := false.B
       val value = io.dataRead(getAddress(x,y-1.U))(0)
       nextRow(x) := value + 2.U
       when (nextRow(x)(0)) {
@@ -202,7 +229,7 @@ class Accelerator extends Module {
     is (write_white){
       io.dataWrite := 255.U
       io.address := getAddress(x,y)
-      writeEnable := true.B
+      io.writeEnable := true.B
       x := x+1.U
       when (x>19.U){
         y := y+1.U
@@ -273,7 +300,7 @@ class Accelerator extends Module {
     is (write_black) {
       io.dataWrite := 0.U
       io.address := getAddress(x,y)
-      writeEnable := true.B
+      io.writeEnable := true.B
       x := x+1.U
       when (x>19.U){
         y := y+1.U
