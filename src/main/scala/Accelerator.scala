@@ -135,7 +135,7 @@ class Accelerator extends Module {
           when(!isRead(x - 1.U, y)) {
             readPixel(x - 1.U, y)
           }.elsewhen(!getValue(x - 1.U, y)) {
-            writeBlack(x - 1.U, y)
+            writeBlack(x, y)
             incrementX()
           }.otherwise {
             // Left neighbour is white
@@ -144,7 +144,7 @@ class Accelerator extends Module {
             when(!isRead(x, y - 1.U)) {
               readPixel(x, y - 1.U)
             }.elsewhen(!getValue(x, y - 1.U)) {
-              writeBlack(x, y - 1.U)
+              writeBlack(x, y)
               incrementX()
             }.otherwise {
               // Up neighbour is white
@@ -153,7 +153,7 @@ class Accelerator extends Module {
               when(!isRead(x + 1.U, y)) {
                 readPixel(x + 1.U, y)
               }.elsewhen(!getValue(x + 1.U, y)) {
-                writeBlack(x + 1.U, y)
+                writeBlack(x, y)
                 incrementX()
               }.otherwise {
                 // Right neighbour is white
@@ -162,7 +162,7 @@ class Accelerator extends Module {
                 when(!isRead(x, y + 1.U)) {
                   readPixel(x, y + 1.U)
                 }.elsewhen(!getValue(x, y + 1.U)) {
-                  writeBlack(x, y + 1.U)
+                  writeBlack(x, y)
                   incrementX()
                 }.otherwise {
                   // Down neighbour is white
